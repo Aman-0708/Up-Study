@@ -1,43 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import DashboardLayout from '../components/dashboard/DashboardLayout'
+import { api } from '../utils/api'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-const initialRoutines = [
-  {
-    id: 1,
-    name: 'Morning Math',
-    subject: 'Mathematics',
-    topic: 'Calculus',
-    time: '08:00',
-    duration: 90,
-    days: ['Mon', 'Wed', 'Fri'],
-    active: true,
-    color: 'violet',
-  },
-  {
-    id: 2,
-    name: 'CS Deep Dive',
-    subject: 'Computer Science',
-    topic: 'Data Structures',
-    time: '10:00',
-    duration: 60,
-    days: ['Tue', 'Thu', 'Sat'],
-    active: true,
-    color: 'teal',
-  },
-  {
-    id: 3,
-    name: 'Physics Review',
-    subject: 'Physics',
-    topic: 'Thermodynamics',
-    time: '14:00',
-    duration: 45,
-    days: ['Wed', 'Sat'],
-    active: false,
-    color: 'amber',
-  },
-]
+const emptyForm = {
+  name: '',
+  subject: '',
+  topic: '',
+  time: '08:00',
+  duration: 60,
+  days: [],
+  color: 'violet',
+}
 
 const colorMap = {
   violet: {
@@ -85,23 +60,31 @@ const colorIcons = {
   pink: '🎨',
 }
 
-const emptyForm = {
-  name: '',
-  subject: '',
-  topic: '',
-  time: '08:00',
-  duration: 60,
-  days: [],
-  color: 'violet',
-}
+
 
 export default function Routines() {
-  const [routines, setRoutines] = useState(initialRoutines)
+  const [routines, setRoutines] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [editRoutine, setEditRoutine] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})
   const [showDeleteId, setShowDeleteId] = useState(null)
+  const token = localStorage.getItem('token')
+
+  useEffect(() => {
+    const fetchRoutines = async () => {
+      try {
+        const data = await api('/routines', 'GET', null, token)
+        setRoutines(data)
+      } catch (error) {
+        console.error('Failed to fetch routines:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchRoutines()
+  }, [])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -141,12 +124,12 @@ export default function Routines() {
       days: routine.days,
       color: routine.color,
     })
-    setEditRoutine(routine.id)
+    setEditRoutine(routine._id)
     setErrors({})
     setShowModal(true)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const newErrors = validate()
     if (Object.keys(newErrors).length > 0) {
@@ -154,28 +137,38 @@ export default function Routines() {
       return
     }
 
-    if (editRoutine) {
-      setRoutines(routines.map((r) =>
-        r.id === editRoutine ? { ...r, ...form } : r
-      ))
-    } else {
-      setRoutines([
-        ...routines,
-        { ...form, id: Date.now(), active: true },
-      ])
+    try {
+      if (editRoutine) {
+        const updated = await api(`/routines/${editRoutine}`, 'PUT', form, token)
+        setRoutines(routines.map((r) => r._id === editRoutine ? updated : r))
+      } else {
+        const created = await api('/routines', 'POST', form, token)
+        setRoutines([created, ...routines])
+      }
+      setShowModal(false)
+    } catch (error) {
+      console.error('Failed to save routine:', error)
     }
-    setShowModal(false)
   }
 
-  const toggleActive = (id) => {
-    setRoutines(routines.map((r) =>
-      r.id === id ? { ...r, active: !r.active } : r
-    ))
+  const toggleActive = async (id) => {
+    try {
+      const routine = routines.find((r) => r._id === id)
+      const updated = await api(`/routines/${id}`, 'PUT', { active: !routine.active }, token)
+      setRoutines(routines.map((r) => r._id === id ? updated : r))
+    } catch (error) {
+      console.error('Failed to toggle routine:', error)
+    }
   }
 
-  const handleDelete = (id) => {
-    setRoutines(routines.filter((r) => r.id !== id))
-    setShowDeleteId(null)
+  const handleDelete = async (id) => {
+    try {
+      await api(`/routines/${id}`, 'DELETE', null, token)
+      setRoutines(routines.filter((r) => r._id !== id))
+      setShowDeleteId(null)
+    } catch (error) {
+      console.error('Failed to delete routine:', error)
+    }
   }
 
   const formatTime = (time) => {
@@ -205,8 +198,15 @@ export default function Routines() {
         </button>
       </div>
 
+      {/* Loading state */}
+      {loading && (
+        <div className="text-center py-20">
+          <div className="text-sm text-white/30">Loading routines...</div>
+        </div>
+      )}
+
       {/* Empty state */}
-      {routines.length === 0 && (
+      {!loading && routines.length === 0 && (
         <div className="text-center py-20">
           <div className="text-4xl mb-4">📋</div>
           <h2 className="text-base font-semibold text-white mb-2">No routines yet</h2>
@@ -228,7 +228,7 @@ export default function Routines() {
           const c = colorMap[routine.color] || colorMap.violet
           return (
             <div
-              key={routine.id}
+              key={routine._id}
               className="bg-white/[0.03] border border-white/5 hover:border-white/10 rounded-2xl p-5 transition-all flex flex-col"
             >
               {/* Top */}
@@ -244,7 +244,7 @@ export default function Routines() {
                     ✏️
                   </button>
                   <button
-                    onClick={() => setShowDeleteId(routine.id)}
+                    onClick={() => setShowDeleteId(routine._id)}
                     className="text-white/20 hover:text-red-400 transition-colors text-sm"
                   >
                     🗑️
@@ -290,7 +290,7 @@ export default function Routines() {
                 </div>
                 {/* Toggle */}
                 <button
-                  onClick={() => toggleActive(routine.id)}
+                  onClick={() => toggleActive(routine._id)}
                   className={`w-10 h-5 rounded-full relative transition-colors ${routine.active ? c.toggle : 'bg-white/10'}`}
                 >
                   <span
