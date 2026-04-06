@@ -1,4 +1,6 @@
 const Session = require('../models/Session')
+const Progress = require('../models/Progress')
+
 
 // @desc    Get all sessions for logged in user
 // @route   GET /api/sessions
@@ -15,6 +17,8 @@ const getSessions = async (req, res) => {
 // @route   POST /api/sessions
 const createSession = async (req, res) => {
   const { subject, day, hour, duration, color } = req.body
+  console.log('Request body:', req.body)
+  console.log('Subject:', subject, 'Day:', day, 'Hour:', hour)
 
   try {
     if (!subject || !day || !hour) {
@@ -36,7 +40,7 @@ const createSession = async (req, res) => {
   }
 }
 
-// @desc    Mark session as completed
+// @desc    Update a session / mark as complete
 // @route   PUT /api/sessions/:id
 const updateSession = async (req, res) => {
   try {
@@ -55,6 +59,35 @@ const updateSession = async (req, res) => {
       req.body,
       { new: true }
     )
+
+    // If session is being marked as complete log progress
+    if (req.body.completed === true && !session.completed) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const existing = await Progress.findOne({
+        user: req.user._id,
+        date: today,
+      })
+
+      const hoursStudied = session.duration / 60
+
+      if (existing) {
+        existing.hoursStudied += hoursStudied
+        existing.sessionsCompleted += 1
+        existing.streakDay = true
+        await existing.save()
+      } else {
+        await Progress.create({
+          user: req.user._id,
+          date: today,
+          hoursStudied,
+          sessionsCompleted: 1,
+          subjects: [{ name: session.subject, hours: hoursStudied }],
+          streakDay: true,
+        })
+      }
+    }
 
     res.status(200).json(updated)
   } catch (error) {

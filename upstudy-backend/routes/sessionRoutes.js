@@ -1,11 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const { getRoutines, createRoutine, updateRoutine, deleteRoutine } = require('../controllers/routineController')
+const { getSessions, createSession, updateSession, deleteSession } = require('../controllers/sessionController')
 const { protect } = require('../middleware/authMiddleware')
 
-router.get('/', protect, getRoutines)
-router.post('/', protect, createRoutine)
-router.put('/:id', protect, updateRoutine)
-router.delete('/:id', protect, deleteRoutine)
+router.get('/', protect, getSessions)
+router.post('/', protect, createSession)
+router.put('/:id', protect, updateSession)
+router.delete('/:id', protect, deleteSession)
 
 module.exports = router

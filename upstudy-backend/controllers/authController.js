@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken')
 
 // Generate JWT token
 const generateToken = (id) => {
+  console.log('JWT_SECRET used:', process.env.JWT_SECRET) // add this
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '7d',
   })

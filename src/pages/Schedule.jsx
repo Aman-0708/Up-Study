@@ -1,24 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import DashboardLayout from '../components/dashboard/DashboardLayout'
+import { api } from '../utils/api'
+import Icon from '../components/Icon'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const HOURS = ['8 AM', '9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM']
 
-const initialSessions = [
-  { id: 1, day: 'Mon', hour: '8 AM', subject: 'Math', duration: 90, color: 'violet' },
-  { id: 2, day: 'Mon', hour: '2 PM', subject: 'English', duration: 30, color: 'teal' },
-  { id: 3, day: 'Tue', hour: '10 AM', subject: 'CS', duration: 60, color: 'teal' },
-  { id: 4, day: 'Tue', hour: '4 PM', subject: 'Math', duration: 30, color: 'violet' },
-  { id: 5, day: 'Wed', hour: '8 AM', subject: 'Math', duration: 90, color: 'violet' },
-  { id: 6, day: 'Wed', hour: '12 PM', subject: 'Physics', duration: 45, color: 'amber' },
-  { id: 7, day: 'Thu', hour: '10 AM', subject: 'CS', duration: 60, color: 'teal' },
-  { id: 8, day: 'Thu', hour: '2 PM', subject: 'Physics', duration: 45, color: 'amber' },
-  { id: 9, day: 'Fri', hour: '8 AM', subject: 'Math', duration: 90, color: 'violet' },
-  { id: 10, day: 'Fri', hour: '10 AM', subject: 'CS', duration: 60, color: 'teal' },
-  { id: 11, day: 'Sat', hour: '10 AM', subject: 'Review', duration: 45, color: 'teal' },
-  { id: 12, day: 'Sat', hour: '12 PM', subject: 'Physics', duration: 45, color: 'amber' },
-  { id: 13, day: 'Sun', hour: '10 AM', subject: 'Review', duration: 60, color: 'green' },
-]
 
 const colorMap = {
   violet: 'bg-violet-600/20 border-l-2 border-violet-500 text-violet-300',
@@ -37,12 +24,29 @@ const emptyForm = {
 }
 
 export default function Schedule() {
-  const [sessions, setSessions] = useState(initialSessions)
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})
   const [selectedSession, setSelectedSession] = useState(null)
   const [view, setView] = useState(window.innerWidth < 768 ? 'day' : 'week')
+  const token = localStorage.getItem('token')
+
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      try {
+        const data = await api('/sessions', 'GET', null, token)
+        setSessions(data)
+      } catch (error) {
+        console.error('Failed to fetch sessions:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSessions()
+  }, [])
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3)
 
@@ -57,21 +61,41 @@ export default function Schedule() {
     return newErrors
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const newErrors = validate()
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
     }
-    setSessions([...sessions, { ...form, id: Date.now() }])
-    setShowModal(false)
-    setForm(emptyForm)
+    try {
+      console.log('Submitting form:', form) // add this
+      const created = await api('/sessions', 'POST', form, token)
+      setSessions([...sessions, created])
+      setShowModal(false)
+      setForm(emptyForm)
+    } catch (error) {
+      console.error('Failed to create session:', error)
+    }
   }
 
-  const handleDelete = (id) => {
-    setSessions(sessions.filter((s) => s.id !== id))
-    setSelectedSession(null)
+  const handleDelete = async (id) => {
+    try {
+      await api(`/sessions/${id}`, 'DELETE', null, token)
+      setSessions(sessions.filter((s) => s._id !== id))
+      setSelectedSession(null)
+    } catch (error) {
+      console.error('Failed to delete session:', error)
+    }
+  }
+  const markComplete = async (id) => {
+    try {
+      const updated = await api(`/sessions/${id}`, 'PUT', { completed: true }, token)
+      setSessions(sessions.map((s) => s._id === id ? updated : s))
+      setSelectedSession(updated)
+    } catch (error) {
+      console.error('Failed to mark session as complete:', error)
+    }
   }
 
   const getSessionsForCell = (day, hour) => {
@@ -118,6 +142,14 @@ export default function Schedule() {
           </button>
         </div>
       </div>
+
+
+      {/* Loading */}
+      {loading && (
+        <div className="text-center py-20">
+          <div className="text-sm text-white/30">Loading sessions...</div>
+        </div>
+      )}
 
       {/* WEEK VIEW */}
       {view === 'week' && (
@@ -184,13 +216,13 @@ export default function Schedule() {
                         >
                           {cellSessions.map((session) => (
                             <div
-                              key={session.id}
+                              key={session._id}
                               onClick={() => setSelectedSession(session)}
                               className={`rounded-md px-1.5 py-1 text-[10px] font-medium cursor-pointer mb-1 truncate
-                                ${colorMap[session.color] || colorMap.violet}`}
+    ${session.completed ? 'bg-green-500/20 border-l-2 border-green-500 text-green-300' : colorMap[session.color] || colorMap.violet}`}
                             >
                               {session.subject}
-                              <div className="text-[9px] opacity-70">{session.duration}m</div>
+                              <div className="text-[9px] opacity-70">{session.completed ? 'Done' : `${session.duration}m`}</div>
                             </div>
                           ))}
                         </div>
@@ -202,6 +234,14 @@ export default function Schedule() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+
+      {/* Loading */}
+      {loading && (
+        <div className="text-center py-20">
+          <div className="text-sm text-white/30">Loading sessions...</div>
         </div>
       )}
 
@@ -238,17 +278,28 @@ export default function Schedule() {
             <div className="flex flex-col gap-3">
               {getTodaySessions().map((session) => (
                 <div
-                  key={session.id}
+                  key={session._id}
                   onClick={() => setSelectedSession(session)}
                   className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer border transition-all
-                    ${colorMap[session.color] || colorMap.violet} border-white/5 hover:border-white/10`}
+    ${session.completed
+                      ? 'bg-green-500/10 border-green-500/20'
+                      : `${colorMap[session.color] || colorMap.violet} border-white/5 hover:border-white/10`
+                    }`}
                 >
                   <div className="text-sm font-medium min-w-[56px]">{session.hour}</div>
                   <div className="flex-1">
-                    <div className="text-sm font-medium text-white">{session.subject}</div>
-                    <div className="text-xs opacity-60 mt-0.5">{session.duration} minutes</div>
+                    <div className={`text-sm font-medium ${session.completed ? 'text-green-400 line-through opacity-60' : 'text-white'}`}>
+                      {session.subject}
+                    </div>
+                    <div className="text-xs opacity-60 mt-0.5">
+                      {session.completed ? 'Completed' : `${session.duration} minutes`}
+                    </div>
                   </div>
-                  <div className="text-xs opacity-50">{session.day}</div>
+                  {session.completed && (
+                    <div className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center flex-shrink-0">
+                      <Icon name="check" size={12} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -275,6 +326,22 @@ export default function Schedule() {
                 ✕
               </button>
             </div>
+
+            {/* Status badge */}
+            <div className="mb-5">
+              {selectedSession.completed ? (
+                <div className="inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/20 text-green-400 text-xs px-3 py-1.5 rounded-full font-medium">
+                  <Icon name="check" size={12} />
+                  Completed
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 bg-violet-600/10 border border-violet-500/20 text-violet-400 text-xs px-3 py-1.5 rounded-full font-medium">
+                  <Icon name="clock" size={12} />
+                  Upcoming
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col gap-3 mb-6">
               <div className="flex justify-between text-sm">
                 <span className="text-white/40">Subject</span>
@@ -293,12 +360,24 @@ export default function Schedule() {
                 <span className="text-white">{selectedSession.duration} minutes</span>
               </div>
             </div>
-            <button
-              onClick={() => handleDelete(selectedSession.id)}
-              className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-medium py-3 rounded-lg transition-colors"
-            >
-              Delete session
-            </button>
+
+            <div className="flex flex-col gap-3">
+              {!selectedSession.completed && (
+                <button
+                  onClick={() => markComplete(selectedSession._id)}
+                  className="w-full bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 text-sm font-medium py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <Icon name="check" size={15} />
+                  Mark as complete
+                </button>
+              )}
+              <button
+                onClick={() => handleDelete(selectedSession._id)}
+                className="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-medium py-3 rounded-lg transition-colors"
+              >
+                Delete session
+              </button>
+            </div>
           </div>
         </div>
       )}
