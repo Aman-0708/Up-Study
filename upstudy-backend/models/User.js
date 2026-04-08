@@ -29,6 +29,16 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Password is required'],
       minlength: 8,
     },
+    university: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    department: {
+      type: String,
+      trim: true,
+      default: '',
+    },
   },
   {
     timestamps: true,
