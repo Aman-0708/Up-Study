@@ -1,11 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import DashboardLayout from '../components/dashboard/DashboardLayout'
+import { api } from '../utils/api'
 
 export default function Profile() {
+
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   const initials = user.firstName && user.lastName
     ? user.firstName[0] + user.lastName[0]
     : 'SF'
+  const navigate = useNavigate()
+  const token = localStorage.getItem('token')
+  const storedUser = JSON.parse(localStorage.getItem('user') || '{}')
 
   const [profileData, setProfileData] = useState({
     firstName: user.firstName || '',
@@ -29,6 +35,7 @@ export default function Profile() {
   const [profileLoading, setProfileLoading] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const handleProfileChange = (e) => {
     setProfileData({ ...profileData, [e.target.name]: e.target.value })
@@ -99,6 +106,21 @@ export default function Profile() {
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
       setPasswordLoading(false)
     }, 800)
+  }
+
+  const handleDeleteAccount = async () => {
+    console.log('Delete account triggered') // add this
+    try {
+      setDeleteLoading(true)
+      await api('/profile', 'DELETE', null, token)
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      navigate('/')
+    } catch (error) {
+      console.error('Failed to delete account:', error)
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   return (
@@ -343,9 +365,11 @@ export default function Profile() {
                 Cancel
               </button>
               <button
-                className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/20 text-red-400 text-sm font-medium py-3 rounded-lg transition-colors"
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading}
+                className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-500/20 text-red-400 text-sm font-medium py-3 rounded-xl transition-colors disabled:opacity-50"
               >
-                Yes, delete
+                {deleteLoading ? 'Deleting...' : 'Yes, delete'}
               </button>
             </div>
           </div>

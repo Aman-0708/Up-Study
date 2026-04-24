@@ -13,35 +13,33 @@ const generateToken = (id) => {
 // @desc    Register a new user
 // @route   POST /api/auth/register
 const registerUser = async (req, res) => {
-  const { firstName, lastName, email, phone, password } = req.body
+  const { firstName, lastName, email, phone, password, role } = req.body
 
   try {
-    // Check if user already exists
     const userExists = await User.findOne({ email })
     if (userExists) {
       return res.status(400).json({ message: 'An account with this email already exists' })
     }
 
-    // Hash the password
     const salt = await bcrypt.genSalt(10)
     const hashedPassword = await bcrypt.hash(password, salt)
 
-    // Create the user
     const user = await User.create({
       firstName,
       lastName,
       email,
       phone,
       password: hashedPassword,
+      role: role || 'student',
     })
 
-    // Respond with user data and token
     res.status(201).json({
       _id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
       phone: user.phone,
+      role: user.role,
       token: generateToken(user._id),
     })
   } catch (error) {
@@ -76,6 +74,7 @@ const loginUser = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       phone: user.phone,
+      role: user.role,
       token: generateToken(user._id),
     })
   } catch (error) {

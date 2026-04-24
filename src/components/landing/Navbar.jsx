@@ -11,8 +11,7 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center text-white">
-            <Icon name="book" size={16} />
+          <div className="w-8 h-8 rounded-lg bg-accent-600 flex items-center justify-center text-white">            <Icon name="book" size={16} />
           </div>
           <span className="font-bold text-white text-lg tracking-tight">
             StudyFlow

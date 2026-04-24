@@ -10,6 +10,7 @@ import Progress from './pages/Progress'
 import Streak from './pages/Streak'
 import ProtectedRoute from './components/ProtectedRoute'
 import GuestRoute from './components/GuestRoute'
+import Hub from './pages/Hub'
 
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
         <Route path="/progress" element={<ProtectedRoute><Progress /></ProtectedRoute>} />
         <Route path="/streak" element={<ProtectedRoute><Streak /></ProtectedRoute>} />
+        <Route path="/hub" element={<ProtectedRoute><Hub /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )

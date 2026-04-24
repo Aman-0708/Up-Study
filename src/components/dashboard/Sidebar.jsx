@@ -5,6 +5,7 @@ const navItems = [
   { icon: 'home', label: 'Dashboard', path: '/dashboard' },
   { icon: 'calendar', label: 'Schedule', path: '/schedule' },
   { icon: 'repeat', label: 'Routines', path: '/routines' },
+  { icon: 'folder', label: 'Hub', path: '/hub' },
   { icon: 'chart', label: 'Progress', path: '/progress' },
   { icon: 'flame', label: 'Streak', path: '/streak' },
   { icon: 'user', label: 'Profile', path: '/profile' },
@@ -62,7 +63,7 @@ export default function Sidebar({ activePath, isOpen, onClose }) {
           <div className="text-[10px] font-medium text-white/20 uppercase tracking-widest px-3 mb-2">
             Main
           </div>
-          {navItems.slice(0, 3).map((item) => (
+          {navItems.slice(0, 4).map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -81,7 +82,7 @@ export default function Sidebar({ activePath, isOpen, onClose }) {
           <div className="text-[10px] font-medium text-white/20 uppercase tracking-widest px-3 mb-2 mt-4">
             Insights
           </div>
-          {navItems.slice(3, 5).map((item) => (
+          {navItems.slice(4, 6).map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -100,7 +101,7 @@ export default function Sidebar({ activePath, isOpen, onClose }) {
           <div className="text-[10px] font-medium text-white/20 uppercase tracking-widest px-3 mb-2 mt-4">
             Account
           </div>
-          {navItems.slice(5).map((item) => (
+          {navItems.slice(6).map((item) => (
             <Link
               key={item.path}
               to={item.path}

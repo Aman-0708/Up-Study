@@ -30,6 +30,7 @@ export default function Login() {
         lastName: data.lastName,
         email: data.email,
         phone: data.phone,
+        role: data.role,
       }))
       navigate('/dashboard')
     } catch (error) {

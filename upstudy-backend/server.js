@@ -21,6 +21,7 @@ app.use('/api/routines', require('./routes/routineRoutes'))
 app.use('/api/sessions', require('./routes/sessionRoutes'))
 app.use('/api/progress', require('./routes/progressRoutes'))
 app.use('/api/profile', require('./routes/profileRoutes'))
+app.use('/api/materials', require('./routes/materialRoutes'))
 // Base route
 app.get('/', (req, res) => {
   res.json({ message: 'StudyFlow API is running' })

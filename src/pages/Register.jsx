@@ -11,6 +11,7 @@ export default function Register() {
     phone: '',
     password: '',
     confirmPassword: '',
+    role: 'student',
   })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -51,6 +52,7 @@ export default function Register() {
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
+        role: formData.role,
       })
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify({
@@ -59,6 +61,7 @@ export default function Register() {
         lastName: data.lastName,
         email: data.email,
         phone: data.phone,
+        role: data.role,
       }))
       navigate('/dashboard')
     } catch (error) {
@@ -213,6 +216,36 @@ export default function Register() {
                 className="bg-white/[0.04] border border-white/10 hover:border-white/20 focus:border-violet-500 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/20 outline-none transition-all"
               />
               {errors.phone && <span className="text-xs text-red-400">{errors.phone}</span>}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-white/50 uppercase tracking-wider">
+                I am a
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role: 'student' })}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-medium transition-all
+        ${formData.role === 'student'
+                      ? 'bg-accent-600/20 border-accent-500/40 text-accent-400'
+                      : 'bg-white/5 border-white/10 text-white/40 hover:border-white/20'
+                    }`}
+                >
+                  Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role: 'lecturer' })}
+                  className={`flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-medium transition-all
+        ${formData.role === 'lecturer'
+                      ? 'bg-accent-600/20 border-accent-500/40 text-accent-400'
+                      : 'bg-white/5 border-white/10 text-white/40 hover:border-white/20'
+                    }`}
+                >
+                  Lecturer
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
